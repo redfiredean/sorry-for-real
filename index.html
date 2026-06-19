@@ -6,6 +6,14 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>SORRY! – For Real! · Card Draw</title>
+<meta property="og:type" content="website">
+<meta property="og:title" content="SORRY! – For Real! · Card Draw">
+<meta property="og:description" content="The Game of Raw Revenge. Draw a card and feel the lightning.">
+<meta property="og:image" content="ref/ref.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="SORRY! – For Real! · Card Draw">
+<meta name="twitter:description" content="The Game of Raw Revenge. Draw a card and feel the lightning.">
+<meta name="twitter:image" content="ref/ref.png">
 <style>
   :root{
     --navy:#0a1030;
@@ -196,6 +204,10 @@
 
   @media (max-width:430px){
     .card-shell{width:78vw;}
+  }
+  /* hide the RedFire logo on phones — keep it on iPad and larger */
+  @media (max-width:767px){
+    .brand-logo{display:none;}
   }
 </style>
 </head>
