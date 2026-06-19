@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>SORRY! – For Real! · Card Draw</title>
+<style>
+  :root{
+    --navy:#0a1030;
+    --navy-2:#070b22;
+    --blue:#34c6ff;
+    --blue-glow:#1fb4ff;
+    --orange:#ff7a2f;
+    --orange-glow:#ff5e1a;
+    --pink:#ff3d8b;
+    --green:#7dff5a;
+    --teal:#2fe6c8;
+    --ink:#e9f3ff;
+    --gray:#8ea0c4;
+  }
+
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;overflow:hidden;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    background:
+      radial-gradient(120% 80% at 50% -10%, #16215a 0%, rgba(10,16,48,0) 55%),
+      radial-gradient(100% 70% at 50% 115%, #1a1140 0%, rgba(10,16,48,0) 60%),
+      var(--navy);
+    color:var(--ink);
+    user-select:none;-webkit-user-select:none;touch-action:manipulation;
+    display:flex;flex-direction:column;align-items:center;justify-content:space-between;
+    height:100dvh;
+    position:relative;
+    overflow:hidden;
+    padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+  }
+
+  /* confetti backdrop pattern (the box-art dashes & dots) */
+  #backdrop{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.55;}
+  .speck{position:absolute;border-radius:99px;will-change:transform,opacity;}
+
+  .wrap{position:relative;z-index:2;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:clamp(16px,3vh,40px) 20px;}
+
+  /* ---------- header / wordmark ---------- */
+  header{text-align:center;flex:0 0 auto;}
+  .kicker{
+    font-size:clamp(11px,1.4vw,15px);
+    letter-spacing:.42em;
+    font-weight:800;
+    color:var(--blue);
+    text-shadow:0 0 12px var(--blue-glow),0 0 28px rgba(31,180,255,.5);
+    padding-left:.42em;
+    margin-bottom:6px;
+  }
+  .title-art{
+    display:block;
+    width:min(58vw,380px);
+    height:auto;
+    margin:6px auto 0;
+    filter:drop-shadow(0 0 22px rgba(31,180,255,.35)) drop-shadow(0 0 26px rgba(255,94,26,.22));
+  }
+
+  /* ---------- stage / card ---------- */
+  .stage{flex:1 1 auto;display:flex;align-items:center;justify-content:center;width:100%;position:relative;}
+
+  .card-shell{
+    position:relative;
+    width:min(70vw,360px);
+    aspect-ratio:5/7;
+    perspective:1400px;
+  }
+
+  .card{
+    position:absolute;inset:0;
+    border-radius:26px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;
+    background:linear-gradient(160deg,#101a44 0%,#0a1133 60%,#0c0f2c 100%);
+    border:1.5px solid rgba(120,200,255,.28);
+    box-shadow:
+      0 0 0 1px rgba(255,255,255,.04) inset,
+      0 24px 60px rgba(0,0,0,.55),
+      0 0 38px var(--accent-soft,rgba(52,198,255,.25));
+    transition:transform .55s cubic-bezier(.2,.9,.25,1.4), box-shadow .4s ease, border-color .4s ease;
+    transform-style:preserve-3d;
+    overflow:hidden;
+    padding:26px 22px;
+  }
+  .card::before{
+    /* glow halo behind the number */
+    content:"";position:absolute;inset:0;
+    background:radial-gradient(60% 45% at 50% 38%, var(--accent-soft,rgba(52,198,255,.32)) 0%, transparent 70%);
+    opacity:.9;pointer-events:none;
+  }
+  .card.idle{transform:translateY(0) rotateZ(-1.2deg);}
+  .card.flashing{transition:transform .07s ease, box-shadow .07s ease;}
+  .card.pop{animation:pop .6s cubic-bezier(.18,.9,.3,1.5);}
+  @keyframes pop{
+    0%{transform:scale(.78) rotateZ(0deg);}
+    55%{transform:scale(1.08) rotateZ(1deg);}
+    100%{transform:scale(1) rotateZ(0deg);}
+  }
+
+  .corner{position:absolute;font-weight:900;font-size:clamp(15px,2.4vw,22px);color:var(--accent,#cfeeff);opacity:.8;text-shadow:0 0 10px var(--accent-soft);}
+  .corner.tl{top:16px;left:18px;}
+  .corner.br{bottom:16px;right:18px;transform:rotate(180deg);}
+
+  .figure{
+    position:relative;z-index:1;
+    font-weight:900;
+    font-size:clamp(96px,20vw,190px);
+    line-height:.9;
+    color:#fff;
+    text-shadow:
+      0 0 6px #fff,
+      0 0 22px var(--accent,var(--blue)),
+      0 0 50px var(--accent-glow,var(--blue-glow)),
+      0 0 90px var(--accent-soft);
+    letter-spacing:-.02em;
+  }
+  .figure.word{font-size:clamp(40px,8.4vw,80px);letter-spacing:-.01em;white-space:nowrap;max-width:94%;}
+
+  .cardname{
+    position:relative;z-index:1;
+    margin-top:6px;
+    font-size:clamp(13px,1.8vw,18px);
+    letter-spacing:.34em;padding-left:.34em;
+    font-weight:800;text-transform:uppercase;
+    color:var(--accent,var(--blue));
+    text-shadow:0 0 14px var(--accent-soft);
+  }
+  .instr{
+    position:relative;z-index:1;
+    margin-top:16px;
+    font-size:clamp(13px,1.9vw,17px);
+    line-height:1.42;
+    color:var(--ink);
+    max-width:90%;
+    opacity:.95;
+  }
+  /* lightning flash overlay on reveal */
+  #flash{position:fixed;inset:0;z-index:5;background:#fff;opacity:0;pointer-events:none;mix-blend-mode:screen;}
+
+  /* ---------- button ---------- */
+  footer{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:14px;width:100%;}
+  .draw-btn{
+    position:relative;
+    border:none;cursor:pointer;
+    font-family:inherit;font-weight:900;
+    font-size:clamp(15px,2vw,20px);
+    letter-spacing:.16em;padding-left:.16em;
+    text-transform:uppercase;
+    color:#fff;
+    padding:clamp(12px,1.8vh,18px) clamp(34px,6vw,60px);
+    border-radius:99px;
+    background:linear-gradient(180deg,#ff9a52 0%,var(--orange) 48%,#e8470c 100%);
+    box-shadow:
+      0 0 0 2px rgba(255,180,120,.5) inset,
+      0 10px 0 #a3300a,
+      0 18px 44px rgba(255,94,26,.5),
+      0 0 50px rgba(255,94,26,.45);
+    transition:transform .08s ease, box-shadow .08s ease, filter .2s ease;
+    -webkit-user-select:none;user-select:none;
+  }
+  .draw-btn:active{
+    transform:translateY(8px);
+    box-shadow:
+      0 0 0 2px rgba(255,180,120,.5) inset,
+      0 2px 0 #a3300a,
+      0 6px 18px rgba(255,94,26,.45),
+      0 0 36px rgba(255,94,26,.4);
+  }
+  .draw-btn.busy{filter:saturate(.7) brightness(.85);pointer-events:none;}
+  .draw-btn .spark{
+    position:absolute;inset:0;border-radius:99px;
+    box-shadow:0 0 0 0 rgba(255,255,255,.6);
+    pointer-events:none;
+  }
+  .draw-btn.busy .spark{animation:none;}
+
+  .hint{font-size:clamp(11px,1.4vw,13px);letter-spacing:.22em;text-transform:uppercase;color:var(--gray);min-height:1em;}
+
+  .brand-logo{
+    position:fixed;z-index:6;
+    right:calc(env(safe-area-inset-right) + 20px);
+    bottom:calc(env(safe-area-inset-bottom) + 18px);
+    width:clamp(110px,16vw,180px);
+    height:auto;
+    pointer-events:none;
+    filter:drop-shadow(0 0 18px rgba(255,60,20,.35));
+    opacity:.96;
+  }
+
+  @media (max-width:430px){
+    .card-shell{width:78vw;}
+  }
+</style>
+</head>
+<body>
+  <div id="backdrop"></div>
+  <div id="flash"></div>
+  <img class="brand-logo" src="ref/logo.png" alt="RedFire Gaming">
+
+
+  <div class="wrap">
+    <header>
+      <div class="kicker">THE GAME OF RAW REVENGE</div>
+      <img class="title-art" src="ref/title.png" alt="SORRY! – For Real!">
+    </header>
+
+    <div class="stage">
+      <div class="card-shell">
+        <div class="card idle" id="card" style="--accent:#34c6ff;--accent-glow:#1fb4ff;--accent-soft:rgba(52,198,255,.3);">
+          <span class="corner tl" id="cornerTL">★</span>
+          <span class="corner br" id="cornerBR">★</span>
+          <div class="figure word" id="figure">DRAW</div>
+          <div class="cardname" id="cardname">Tap the button</div>
+          <div class="instr" id="instr">Pull a card to see what fate has in store.</div>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      <button class="draw-btn" id="drawBtn"><span class="spark"></span>Draw Card</button>
+      <div class="hint" id="hint"></div>
+    </footer>
+  </div>
+
+<script>
+/* ---------------------------------------------------------------------------
+   Sorry! deck — standard 45-card composition & official instructions.
+   count = how many of that card are in the deck → drives true probability.
+--------------------------------------------------------------------------- */
+const DECK = [
+  { face:"1",  word:false, count:5, name:"Move One",      accent:"#34c6ff", glow:"#1fb4ff",
+    instr:"Start a human out of Start, OR move one human forward 1 space." },
+  { face:"2",  word:false, count:4, name:"Move & Draw",   accent:"#2fe6c8", glow:"#11cdae",
+    instr:"Start a human out of Start, OR move forward 2 spaces — then DRAW AGAIN." },
+  { face:"3",  word:false, count:4, name:"Move Three",    accent:"#7dff5a", glow:"#52e02f",
+    instr:"Move one human forward 3 spaces." },
+  { face:"4",  word:false, count:4, name:"Backward Four", accent:"#ff3d8b", glow:"#ff1a72",
+    instr:"Move one human BACKWARD 4 spaces." },
+  { face:"5",  word:false, count:4, name:"Move Five",     accent:"#b58cff", glow:"#9a5eff",
+    instr:"Move one human forward 5 spaces." },
+  { face:"7",  word:false, count:4, name:"Lucky Seven",   accent:"#ffd23f", glow:"#ffb800",
+    instr:"Move forward 7 spaces with one human, OR split the 7 between two humans." },
+  { face:"8",  word:false, count:4, name:"Move Eight",    accent:"#34c6ff", glow:"#1fb4ff",
+    instr:"Move one human forward 8 spaces." },
+  { face:"10", word:false, count:4, name:"Ten or Back",   accent:"#2fe6c8", glow:"#11cdae",
+    instr:"Move forward 10 spaces, OR move one human BACKWARD 1 space." },
+  { face:"11", word:false, count:4, name:"Eleven / Swap", accent:"#ff7a2f", glow:"#ff5e1a",
+    instr:"Move forward 11 spaces, OR switch one of your humans with an opponent's. (Optional)" },
+  { face:"12", word:false, count:4, name:"Move Twelve",   accent:"#7dff5a", glow:"#52e02f",
+    instr:"Move one human forward 12 spaces." },
+  { face:"SORRY!", word:true, count:4, name:"Raw Revenge", accent:"#ff3d8b", glow:"#ff1a72",
+    instr:"Take a human from Start, bump an opponent's human off its space, and send them back to Start." },
+];
+
+const TOTAL = DECK.reduce((s,c)=>s+c.count,0); // 45
+
+/* weighted random draw — exactly the real-game probability per card type */
+function drawCard(){
+  let r = Math.floor(Math.random()*TOTAL);
+  for(const c of DECK){ if(r < c.count) return c; r -= c.count; }
+  return DECK[0];
+}
+function randomFace(){ return DECK[Math.floor(Math.random()*DECK.length)]; }
+
+/* ---------------------------------------------------------------------------
+   Sound — synthesized with Web Audio (no external files).
+   A rising electric "charge" during the shuffle, then a zap + chime on reveal.
+--------------------------------------------------------------------------- */
+let audioCtx = null;
+const soundOn = true;
+function ac(){ if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)(); return audioCtx; }
+
+function tick(){
+  if(!soundOn) return;
+  const c = ac(), t = c.currentTime;
+  const o = c.createOscillator(), g = c.createGain();
+  o.type="square"; o.frequency.value = 420 + Math.random()*520;
+  g.gain.setValueAtTime(0.0001,t);
+  g.gain.exponentialRampToValueAtTime(0.06,t+0.004);
+  g.gain.exponentialRampToValueAtTime(0.0001,t+0.06);
+  o.connect(g).connect(c.destination); o.start(t); o.stop(t+0.07);
+}
+
+function chargeSweep(dur){
+  if(!soundOn) return;
+  const c = ac(), t = c.currentTime;
+  const o = c.createOscillator(), g = c.createGain();
+  o.type="sawtooth";
+  o.frequency.setValueAtTime(140,t);
+  o.frequency.exponentialRampToValueAtTime(680,t+dur);
+  g.gain.setValueAtTime(0.0001,t);
+  g.gain.exponentialRampToValueAtTime(0.05,t+0.05);
+  g.gain.setValueAtTime(0.05,t+dur*0.7);
+  g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  const f = c.createBiquadFilter(); f.type="lowpass"; f.frequency.value=1600;
+  o.connect(g).connect(f).connect(c.destination); o.start(t); o.stop(t+dur+0.05);
+}
+
+function reveal(){
+  if(!soundOn) return;
+  const c = ac(), t = c.currentTime;
+  // zap / impact
+  const noise = c.createBufferSource();
+  const buf = c.createBuffer(1, c.sampleRate*0.25, c.sampleRate);
+  const d = buf.getChannelData(0);
+  for(let i=0;i<d.length;i++){ d[i] = (Math.random()*2-1)*Math.pow(1-i/d.length,2.2); }
+  noise.buffer = buf;
+  const nf = c.createBiquadFilter(); nf.type="bandpass"; nf.frequency.value=2600; nf.Q.value=0.7;
+  const ng = c.createGain(); ng.gain.value=0.5;
+  noise.connect(nf).connect(ng).connect(c.destination); noise.start(t);
+  // triumphant chord (electric chime)
+  const notes = [523.25, 659.25, 783.99, 1046.5];
+  notes.forEach((freq,i)=>{
+    const o = c.createOscillator(), g = c.createGain();
+    o.type = i===3 ? "triangle" : "sawtooth";
+    o.frequency.value = freq;
+    const st = t + i*0.045;
+    g.gain.setValueAtTime(0.0001,st);
+    g.gain.exponentialRampToValueAtTime(0.16,st+0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001,st+0.85);
+    const f = c.createBiquadFilter(); f.type="lowpass";
+    f.frequency.setValueAtTime(5200,st); f.frequency.exponentialRampToValueAtTime(1200,st+0.8);
+    o.connect(g).connect(f).connect(c.destination); o.start(st); o.stop(st+0.9);
+  });
+  // sub thump
+  const sub = c.createOscillator(), sg = c.createGain();
+  sub.type="sine"; sub.frequency.setValueAtTime(160,t); sub.frequency.exponentialRampToValueAtTime(48,t+0.3);
+  sg.gain.setValueAtTime(0.4,t); sg.gain.exponentialRampToValueAtTime(0.0001,t+0.4);
+  sub.connect(sg).connect(c.destination); sub.start(t); sub.stop(t+0.45);
+}
+
+/* ---------------------------------------------------------------------------
+   Backdrop confetti (the box-art dashes & dots)
+--------------------------------------------------------------------------- */
+(function buildBackdrop(){
+  const bd = document.getElementById('backdrop');
+  const colors = ['#34c6ff','#2fe6c8','#7dff5a','#ff3d8b','#ff7a2f','#ffd23f','#b58cff'];
+  const N = 150;
+  for(let i=0;i<N;i++){
+    const s = document.createElement('span');
+    s.className='speck';
+    const dash = Math.random()>0.45;
+    const w = dash ? 10+Math.random()*22 : 5+Math.random()*7;
+    const h = dash ? 5+Math.random()*6 : w;
+    s.style.width=w+'px'; s.style.height=h+'px';
+    s.style.left=Math.random()*100+'%'; s.style.top=Math.random()*100+'%';
+    const col=colors[Math.floor(Math.random()*colors.length)];
+    s.style.background=col;
+    s.style.boxShadow='0 0 8px '+col;
+    s.style.transform='rotate('+(Math.random()*360)+'deg)';
+    s.style.opacity=(0.35+Math.random()*0.5).toFixed(2);
+    bd.appendChild(s);
+  }
+})();
+
+/* burst of confetti on reveal */
+function confettiBurst(accent){
+  const colors = ['#34c6ff','#2fe6c8','#7dff5a','#ff3d8b','#ff7a2f','#ffd23f','#b58cff', accent];
+  const cx = window.innerWidth/2, cy = window.innerHeight*0.46;
+  for(let i=0;i<46;i++){
+    const p = document.createElement('span');
+    p.className='speck';
+    const dash = Math.random()>0.4;
+    const w = dash ? 9+Math.random()*18 : 6+Math.random()*6;
+    const h = dash ? 5+Math.random()*5 : w;
+    const col = colors[Math.floor(Math.random()*colors.length)];
+    p.style.width=w+'px'; p.style.height=h+'px';
+    p.style.background=col; p.style.boxShadow='0 0 8px '+col;
+    p.style.left=cx+'px'; p.style.top=cy+'px';
+    p.style.zIndex=4; p.style.opacity=1;
+    document.body.appendChild(p);
+    const ang = Math.random()*Math.PI*2;
+    const dist = 120 + Math.random()*340;
+    const dx = Math.cos(ang)*dist, dy = Math.sin(ang)*dist - 60;
+    const rot = (Math.random()*720-360);
+    p.animate([
+      { transform:`translate(0,0) rotate(0deg)`, opacity:1 },
+      { transform:`translate(${dx}px,${dy}px) rotate(${rot}deg)`, opacity:0 }
+    ], { duration:900+Math.random()*500, easing:'cubic-bezier(.15,.7,.3,1)' })
+     .onfinish = ()=>p.remove();
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Draw sequence — slot-machine shuffle decelerating into a locked card.
+--------------------------------------------------------------------------- */
+const card    = document.getElementById('card');
+const figure  = document.getElementById('figure');
+const cardname= document.getElementById('cardname');
+const instr   = document.getElementById('instr');
+const cornerTL= document.getElementById('cornerTL');
+const cornerBR= document.getElementById('cornerBR');
+const btn     = document.getElementById('drawBtn');
+const hint    = document.getElementById('hint');
+const flash   = document.getElementById('flash');
+
+function paintFace(c, full){
+  figure.textContent = c.face;
+  figure.classList.toggle('word', c.word);
+  cornerTL.textContent = c.word ? "!" : c.face;
+  cornerBR.textContent = c.word ? "!" : c.face;
+  card.style.setProperty('--accent', c.accent);
+  card.style.setProperty('--accent-glow', c.glow);
+  card.style.setProperty('--accent-soft', hexA(c.accent,.34));
+  card.style.borderColor = hexA(c.accent,.5);
+  if(full){
+    cardname.textContent = c.name;
+    instr.textContent = c.instr;
+  }
+}
+function hexA(hex,a){
+  const n=parseInt(hex.slice(1),16);
+  return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`;
+}
+
+let busy=false;
+function doDraw(){
+  if(busy) return;
+  busy=true;
+  ac().resume && ac().resume();
+  btn.classList.add('busy');
+  card.classList.remove('pop','idle');
+  card.classList.add('flashing');
+  cardname.textContent="";
+  instr.textContent="";
+  hint.textContent="";
+
+  const final = drawCard();
+  const totalDur = 1750;
+  let elapsed = 0;
+  let delay = 45;
+  chargeSweep(totalDur/1000);
+
+  function step(){
+    paintFace(randomFace(), false);
+    card.style.transform = `translateY(0) rotateZ(${(Math.random()*4-2).toFixed(2)}deg) scale(${(0.97+Math.random()*0.03).toFixed(3)})`;
+    tick();
+    elapsed += delay;
+    // strong ease-out: the flashing crawls to a near-stop just before it locks
+    const p = Math.min(elapsed/totalDur, 1);
+    delay = 40 + Math.pow(p, 4) * 560;
+    if(elapsed < totalDur){
+      setTimeout(step, delay);
+    }else{
+      lockIn(final);
+    }
+  }
+  step();
+}
+
+function lockIn(c){
+  card.classList.remove('flashing');
+  paintFace(c, true);
+  card.style.transform = "";
+  card.classList.add('pop');
+  // lightning flash
+  flash.animate([{opacity:0},{opacity:.85},{opacity:0}],{duration:260,easing:'ease-out'});
+  reveal();
+  confettiBurst(c.accent);
+  if(navigator.vibrate) navigator.vibrate([12,40,18]);
+  hint.textContent = c.word ? "Bump 'em back to Start." : "";
+  setTimeout(()=>{
+    card.classList.add('idle');
+    btn.classList.remove('busy');
+    busy=false;
+  }, 620);
+}
+
+btn.addEventListener('click', doDraw);
+
+// keyboard convenience
+window.addEventListener('keydown',e=>{ if(e.code==='Space'||e.code==='Enter'){ e.preventDefault(); doDraw(); }});
+</script>
+</body>
+</html>
